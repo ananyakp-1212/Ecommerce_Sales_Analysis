@@ -1,0 +1,120 @@
+SET search_path TO ecom;
+
+-- 1. Customer segmentation based on delivered orders
+
+WITH customer_summary AS (
+SELECT
+c.customer_id,
+COUNT(DISTINCT o.order_id) AS total_orders,
+COALESCE(SUM(o.total), 0) AS lifetime_spend
+FROM customers c
+LEFT JOIN orders o
+ON c.customer_id = o.customer_id
+AND LOWER(TRIM(o.status)) = 'delivered'
+GROUP BY c.customer_id
+),
+
+customer_segments AS (
+SELECT
+customer_id,
+total_orders,
+lifetime_spend,
+CASE
+WHEN total_orders = 0 THEN 'No-orders'
+WHEN total_orders = 1 THEN 'One-Time_Buyer'
+WHEN total_orders BETWEEN 2 AND 4 THEN 'Repeat_Buyer'
+WHEN total_orders >= 5 THEN 'VIP Buyer'
+END AS segment
+FROM customer_summary
+)
+
+SELECT
+segment,
+COUNT(*) AS customer_count,
+ROUND(
+COUNT(*) * 100.0 / (SELECT COUNT(*) FROM customer_segments),
+2
+) AS pct_customers,
+SUM(lifetime_spend) AS segment_revenue,
+ROUND(
+SUM(lifetime_spend) * 100.0 /
+(SELECT SUM(lifetime_spend) FROM customer_segments),
+2
+) AS pct_revenue
+FROM customer_segments
+GROUP BY segment
+ORDER BY pct_revenue DESC;
+
+-- 2. Average orders and lifetime spend by segment
+
+WITH customer_summary AS (
+SELECT
+c.customer_id,
+COUNT(DISTINCT o.order_id) AS total_orders,
+COALESCE(SUM(o.total), 0) AS lifetime_spend
+FROM customers c
+LEFT JOIN orders o
+ON c.customer_id = o.customer_id
+AND LOWER(TRIM(o.status)) = 'delivered'
+GROUP BY c.customer_id
+),
+
+customer_segments AS (
+SELECT
+customer_id,
+total_orders,
+lifetime_spend,
+CASE
+WHEN total_orders = 0 THEN 'No-orders'
+WHEN total_orders = 1 THEN 'One-Time_Buyer'
+WHEN total_orders BETWEEN 2 AND 4 THEN 'Repeat_Buyer'
+WHEN total_orders >= 5 THEN 'VIP Buyer'
+END AS segment
+FROM customer_summary
+)
+
+SELECT
+segment,
+COUNT(*) AS customer_count,
+ROUND(AVG(total_orders), 2) AS avg_orders,
+ROUND(AVG(lifetime_spend), 2) AS avg_lifetime_spend
+FROM customer_segments
+GROUP BY segment
+ORDER BY avg_lifetime_spend DESC;
+
+-- 3. Repeat Buyer value compared with One-Time Buyer
+
+WITH customer_summary AS (
+SELECT
+c.customer_id,
+COUNT(DISTINCT o.order_id) AS total_orders,
+COALESCE(SUM(o.total), 0) AS lifetime_spend
+FROM customers c
+LEFT JOIN orders o
+ON c.customer_id = o.customer_id
+AND LOWER(TRIM(o.status)) = 'delivered'
+GROUP BY c.customer_id
+),
+
+customer_segments AS (
+SELECT
+customer_id,
+total_orders,
+lifetime_spend,
+CASE
+WHEN total_orders = 0 THEN 'No-orders'
+WHEN total_orders = 1 THEN 'One-Time_Buyer'
+WHEN total_orders BETWEEN 2 AND 4 THEN 'Repeat_Buyer'
+WHEN total_orders >= 5 THEN 'VIP Buyer'
+END AS segment
+FROM customer_summary
+)
+
+SELECT
+ROUND(
+AVG(lifetime_spend) FILTER (WHERE segment = 'Repeat_Buyer')
+/
+AVG(lifetime_spend) FILTER (WHERE segment = 'One-Time_Buyer'),
+2
+) AS repeat_vs_onetime_ratio
+FROM customer_segments;
