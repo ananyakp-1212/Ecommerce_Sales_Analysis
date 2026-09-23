@@ -52,7 +52,7 @@ Repeat Buyers have 2.89× the average lifetime spend of One-Time Buyers, while V
 
 Finding: Revenue fluctuates substantially by month while AOV remains relatively stable, suggesting that order volume is the primary driver of the observed monthly revenue changes.
 
-[Read the detailed business health analysis](findings/business_health.md)
+[Read the detailed business health analysis](Findings/business_health.md)
 
 ### Customer Segmentation
 
@@ -62,7 +62,7 @@ Finding: Revenue fluctuates substantially by month while AOV remains relatively 
 
 Finding: A relatively small group of Repeat and VIP customers contributes the majority of delivered revenue.
 
-[Read the detailed customer segmentation analysis](findings/03_customer_segments.md)
+[Read the detailed customer segmentation analysis](Findings/customer_segment.md)
 
 ---
 
@@ -138,70 +138,3 @@ Contains the analytical SQL scripts used to explore the database and answer the 
 ### Findings
 
 Contains the business-facing interpretation of the SQL analysis, including quantified findings and recommendations.
-
----
-
-## How to Reproduce
-
-### Requirements
-
-* PostgreSQL
-* VS Code
-* SQLTools extension for VS Code
-* Access to the project PostgreSQL database
-
-### Steps
-
-1. Connect to the PostgreSQL database using SQLTools.
-2. Open the project in VS Code.
-3. Run the SQL scripts from the `SQL/` directory.
-4. Each SQL file begins with:
-
-```sql
-SET search_path TO ecom;
-```
-
-5. Review the corresponding findings in the `Findings/` directory.
-
-The SQL scripts are designed to run independently rather than requiring temporary tables or undocumented intermediate steps.
-
----
-
-## Data & Methodology Notes
-
-Revenue analysis uses delivered orders only, identified using:
-
-```sql
-LOWER(TRIM(status)) = 'delivered'
-```
-
-This handles inconsistent capitalization and whitespace in the order-status field.
-
-For customer analysis, customers with no delivered orders are retained using a `LEFT JOIN`. Their lifetime spend is represented as zero using `COALESCE()`.
-
-The reported revenue uses the recorded `orders.total` for delivered orders. This value includes the order-level adjustments represented in the source data.
-
-March and June contain partial-period data, so monthly comparisons should account for the different observation periods.
-
----
-
-## What I'd Analyze Next
-
-The current analysis establishes revenue trends and customer value, but several questions could be explored in a next phase:
-
-* Purchase recency: How recently did customers last purchase?
-* Purchase frequency: How much time passes between repeat purchases?
-* Customer profitability: Which segments generate the most margin rather than revenue?
-* Product behavior: Which categories or products are associated with repeat purchasing?
-* Acquisition: Which marketing channels bring customers with higher lifetime value?
-* Retention: What percentage of first-time customers return within a defined period?
-
-Adding these dimensions would move the analysis from descriptive segmentation toward customer lifecycle and marketing effectiveness analysis.
-
----
-
-## Portfolio Takeaway
-
-This project demonstrates an end-to-end SQL analytics workflow: translating business questions into analytical queries, validating the underlying data, calculating meaningful metrics, and communicating the results in business terms.
-
-The key lesson from the analysis is that revenue is not evenly distributed across customers. Understanding where customer value is concentrated provides a stronger basis for retention, reactivation, and customer-growth decisions than looking at revenue totals alone.
